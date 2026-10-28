@@ -84,6 +84,7 @@ OpenGLSpotLight::~OpenGLSpotLight()
 void OpenGLSpotLight::InitShadowmap(GLint shadowmapLayer)
 {
     //Create shadowmap framebuffer
+    shadowLayer = shadowmapLayer;
     glGenFramebuffers(1, &shadowFBO);
     OpenGLState::BindFramebuffer(shadowFBO);
     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, spotShadowArrayTex, 0, shadowmapLayer);
@@ -95,6 +96,12 @@ void OpenGLSpotLight::InitShadowmap(GLint shadowmapLayer)
         printf("FBO initialization failed.\n");
     
     OpenGLState::BindFramebuffer(0);
+}
+
+void OpenGLSpotLight::setShadowmapLayer(GLint layer)
+{
+    if(layer >= 0 && layer < MAX_SPOT_LIGHTS)
+        shadowLayer = layer;
 }
 
 LightType OpenGLSpotLight::getType() const
@@ -134,6 +141,13 @@ void OpenGLSpotLight::UpdateTransform()
     dir = tempDir;
 }
 
+void OpenGLSpotLight::setColorIntensity(glm::vec3 rgb, GLfloat intensity)
+{
+    OpenGLLight::setColorIntensity(rgb, intensity);
+    // Zero/dim light must not create a degenerate projection; update when restored.
+    zFar = glm::max(zNear + 1e-3f, sqrtf(colorLi.w / MIN_INTENSITY_THRESHOLD));
+}
+
 void OpenGLSpotLight::SetupShader(LightUBO* ubo)
 {
     SpotLightUBO* spotUbo = (SpotLightUBO*)ubo;
@@ -164,6 +178,10 @@ void OpenGLSpotLight::BakeShadowmap(OpenGLPipeline* pipe)
     ((GraphicalSimulationApp*)SimulationApp::getApp())->getGLPipeline()->getContent()->SetViewMatrix(view);
     
     OpenGLState::BindFramebuffer(shadowFBO);
+    // The shader indexes shadow arrays with the packed active spotlight index.
+    // Reattach the existing FBO; never allocate a new one when blinking.
+    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                              spotShadowArrayTex, 0, shadowLayer);
     OpenGLState::Viewport(0, 0, SPOT_LIGHT_SHADOWMAP_SIZE, SPOT_LIGHT_SHADOWMAP_SIZE);
     glClear(GL_DEPTH_BUFFER_BIT);
     //glEnable(GL_POLYGON_OFFSET_FILL);

@@ -24,6 +24,7 @@
 //
 
 #include "graphics/OpenGLLight.h"
+#include <cmath>
 
 #include "graphics/OpenGLState.h"
 #include "graphics/GLSLShader.h"
@@ -62,6 +63,28 @@ bool OpenGLLight::isActive()
 glm::vec4 OpenGLLight::getColorLi()
 {
     return colorLi;
+}
+
+void OpenGLLight::setColorIntensity(glm::vec3 rgb, GLfloat intensity)
+{
+    if(!std::isfinite(rgb.r) || !std::isfinite(rgb.g) ||
+       !std::isfinite(rgb.b) || !std::isfinite(intensity))
+        return;
+    colorLi = glm::vec4(glm::clamp(rgb, glm::vec3(0.f), glm::vec3(1.f)),
+                        glm::max(0.f, intensity));
+}
+
+GLint OpenGLLight::getActiveIndex(const std::vector<OpenGLLight*>& lights, size_t lightId)
+{
+    if(lightId >= lights.size() || lights[lightId] == nullptr ||
+       !lights[lightId]->isActive())
+        return -1;
+    const LightType type = lights[lightId]->getType();
+    GLint index = 0;
+    for(size_t i = 0; i < lightId; ++i)
+        if(lights[i] != nullptr && lights[i]->isActive() && lights[i]->getType() == type)
+            ++index;
+    return index;
 }
 
 glm::vec3 OpenGLLight::getPosition()

@@ -69,6 +69,9 @@ namespace sf
          \param shadowmapLayer the shadowmap texture layer related to this light
          */
         void InitShadowmap(GLint shadowmapLayer);
+
+        //! Select the packed active-light layer; reuse the existing FBO.
+        void setShadowmapLayer(GLint layer);
         
         //! A method implementing rendering of shadowmaps.
         /*!
@@ -87,6 +90,9 @@ namespace sf
          \param ubo a pointer to the light UBO structure
          */
         void SetupShader(LightUBO* ubo);
+
+        //! Update intensity and the corresponding shadow frustum range.
+        void setColorIntensity(glm::vec3 rgb, GLfloat intensity) override;
         
         //! A method used to update direction of the spot light.
         /*!
@@ -119,7 +125,8 @@ namespace sf
         GLfloat zNear;
         GLfloat zFar;
         glm::mat4 clipSpace;
-        GLuint shadowFBO;
+        GLuint shadowFBO = 0;
+        GLint shadowLayer = 0;
     };
 }
 

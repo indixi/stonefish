@@ -24,6 +24,7 @@
 //
 
 #include "actuators/Light.h"
+#include <cmath>
 
 #include "core/GraphicalSimulationApp.h"
 #include "graphics/OpenGLPipeline.h"
@@ -121,13 +122,17 @@ void Light::AttachToSolid(SolidEntity* body, const Transform& origin)
 void Light::InitGraphics()
 {
     if(coneAngle > Scalar(0)) //Spot light
-        glLight = new OpenGLSpotLight(glm::vec3(0.f), glm::vec3(0.f,0.f,-1.f), (GLfloat)R, (GLfloat)coneAngle, c.rgb, (GLfloat)Fi);
+        glLight = new OpenGLSpotLight(glm::vec3(0.f), glm::vec3(0.f,0.f,-1.f), (GLfloat)R, (GLfloat)coneAngle, c.rgb, 1.f);
     else //Omnidirectional light
-        glLight = new OpenGLPointLight(glm::vec3(0.f), (GLfloat)R, c.rgb, (GLfloat)Fi);
+        glLight = new OpenGLPointLight(glm::vec3(0.f), (GLfloat)R, c.rgb, 1.f);
     
+    // Capture the existing point/spot normalization using unit luminous power.
+    // This fixed coefficient survives zero power and avoids cumulative scaling.
+    powerToIntensity = glLight->getColorLi().w;
+    glLight->setColorIntensity(c.rgb, powerToIntensity * static_cast<GLfloat>(Fi));
     UpdateTransform();
     glLight->UpdateTransform();
-    glLight->SwitchOn();
+    Switch(enabled);
     ((GraphicalSimulationApp*)SimulationApp::getApp())->getGLPipeline()->getContent()->AddLight(glLight);
 }
     
@@ -207,11 +212,30 @@ std::vector<Renderable> Light::Render()
     return items;
 }
 
+void Light::setLightProperties(const Color& color, Scalar luminousPower, bool on)
+{
+    if(!std::isfinite(luminousPower) ||
+       !std::isfinite(color.rgb.r) || !std::isfinite(color.rgb.g) ||
+       !std::isfinite(color.rgb.b))
+        return;
+    const Scalar power = btMax(Scalar(0), luminousPower);
+    const GLfloat renderPower = static_cast<GLfloat>(power);
+    const GLfloat intensity = powerToIntensity * renderPower;
+    if(!std::isfinite(renderPower) || !std::isfinite(intensity))
+        return;
+    c.rgb = glm::clamp(color.rgb, glm::vec3(0.f), glm::vec3(1.f));
+    Fi = power;
+    if(glLight != nullptr)
+        glLight->setColorIntensity(c.rgb, intensity);
+    Switch(on);
+}
+
 void Light::Switch(bool on)
 {
+    enabled = on;
     if(glLight != nullptr)
     {
-        if(on)
+        if(enabled && Fi > Scalar(0))
             glLight->SwitchOn();
         else
             glLight->SwitchOff();

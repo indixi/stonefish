@@ -371,21 +371,29 @@ void OpenGLPipeline::Render(SimulationManager* sim)
     OpenGLState::EnableCullFace();
     
     //Bake shadow maps for lights (independent of view)
-    content->SetupLights();
     if(rSettings.shadows > RenderQuality::DISABLED)
     {
         glCullFace(GL_FRONT);
         glDisable(GL_DEPTH_CLAMP);
         content->SetDrawingMode(DrawingMode::SHADOW);
+        GLint spotLayer = 0;
         for(size_t i=0; i<content->getLightsCount(); ++i)
         {
-            if(content->getLight(i)->isActive())
-                content->getLight(i)->BakeShadowmap(this);
+            OpenGLLight* light = content->getLight(i);
+            if(light->isActive())
+            {
+                if(light->getType() == LightType::SPOT)
+                    static_cast<OpenGLSpotLight*>(light)->setShadowmapLayer(spotLayer++);
+                light->BakeShadowmap(this);
+            }
         }
         glEnable(GL_DEPTH_CLAMP);
         glCullFace(GL_BACK);
     }
     
+    // BakeShadowmap updates clipSpace. Upload that matrix and frustumFar together.
+    content->SetupLights();
+
     //Clear display framebuffer
     OpenGLState::BindFramebuffer(screenFBO);
     glClear(GL_COLOR_BUFFER_BIT);

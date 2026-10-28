@@ -904,7 +904,8 @@ void OpenGLContent::DrawLightSource(unsigned int lightId)
         glm::vec4 colorLi = lights[lightId]->getColorLi();
         glm::mat4 M = lights[lightId]->getTransform();
         GLint type = lights[lightId]->getType() == LightType::POINT ? 0 : 1; 
-        GLint id = lights[lightId]->getType() == LightType::POINT ? lightId : lightId - lightsUBOData.numPointLights;
+        // SetupLights packs only active lights, separately for each type.
+        GLint id = OpenGLLight::getActiveIndex(lights, lightId);
 
         GLSLShader* shader = mode == DrawingMode::FULL ? lightSourceShader[0] : lightSourceShader[1];
         shader->Use();

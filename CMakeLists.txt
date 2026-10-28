@@ -10,6 +10,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 option(BUILD_TESTS "Build applications testing different features of the Stonefish library" OFF)
 option(EMBED_RESOURCES "Embed internal resources in the library executable" OFF)
+option(BUILD_LIGHT_CONTROL_TESTS "Build CPU-only light control regression checks" OFF)
 
 # Compile flags
 set(CMAKE_CXX_STANDARD 17)
@@ -143,4 +144,17 @@ else()
         "${CMAKE_CURRENT_BINARY_DIR}/StonefishConfigVersion.cmake" 
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/${CMAKE_PROJECT_NAME}
     )
+endif()
+# These checks create no window and do not need an OpenGL context.
+if(BUILD_LIGHT_CONTROL_TESTS)
+    enable_testing()
+    add_library(stonefish_light_api_check OBJECT Tests/LightParserAccessTest.cpp)
+    target_compile_definitions(stonefish_light_api_check PRIVATE ${BULLET_FLAGS})
+    add_executable(stonefish_light_control_test Tests/LightControlTest.cpp)
+    if(TARGET Stonefish)
+        target_link_libraries(stonefish_light_control_test PRIVATE Stonefish)
+    else()
+        target_link_libraries(stonefish_light_control_test PRIVATE Stonefish_test)
+    endif()
+    add_test(NAME stonefish_light_control_test COMMAND stonefish_light_control_test)
 endif()

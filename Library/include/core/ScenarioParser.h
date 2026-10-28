@@ -290,11 +290,14 @@ namespace sf
         //! A method informing if the simulation is working in graphical mode.
         bool isGraphicalSim();
 
+        //! Parse a color using the native SCN formats (RGB, HSV, temperature, gray).
+        //! Protected so derived parsers can reuse the same conversion rules.
+        bool ParseColor(XMLElement* element, Color& c);
+
     private:
         bool CopyNode(XMLNode* destParent, const XMLNode* src);
         bool ParseVector(const char* components, Vector3& v);
         bool ParseTransform(XMLElement* element, Transform& T);
-        bool ParseColor(XMLElement* element, Color& c);
         bool ParseColorMap(XMLElement* element, ColorMap& cm);
     
         XMLDocument doc;

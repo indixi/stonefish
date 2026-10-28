@@ -103,6 +103,10 @@ namespace sf
         */
         void Switch(bool on);
 
+        //! Update absolute luminous power [lm], RGB and requested on/off state.
+        //! Call on the rendering thread; invalid/non-finite values are ignored.
+        void setLightProperties(const Color& color, Scalar luminousPower, bool enabled);
+
 		//! A method returning actuator frame in the world frame.
 		Transform getActuatorFrame() const;
 		
@@ -120,6 +124,8 @@ namespace sf
         Scalar Fi;
         Scalar coneAngle;
         OpenGLLight* glLight;
+        GLfloat powerToIntensity = 0.f;
+        bool enabled = true;
     };
 }
 

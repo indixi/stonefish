@@ -103,6 +103,13 @@ namespace sf
         
         //! A method returning the color and intensity of the light.
         glm::vec4 getColorLi();
+
+        //! Change CPU-side RGB and intensity on the rendering thread.
+        //! Does not change the active state or allocate GPU resources.
+        virtual void setColorIntensity(glm::vec3 rgb, GLfloat intensity);
+
+        //! Index in the active, per-type UBO array; -1 for an inactive/invalid light.
+        static GLint getActiveIndex(const std::vector<OpenGLLight*>& lights, size_t lightId);
         
         //! A method returning the position of the light.
         glm::vec3 getPosition();
